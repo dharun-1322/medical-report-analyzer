@@ -1,27 +1,8 @@
-# ── Core ML / DL ──────────────────────────────────────────────────────────────
-torch>=2.1.0
-torchvision>=0.16.0
-transformers>=4.38.0
-datasets>=2.17.0
-accelerate>=0.27.0
-evaluate>=0.4.1
-scikit-learn>=1.4.0
-joblib>=1.3.2
-# ── NLP ───────────────────────────────────────────────────────────────────────
-spacy>=3.7.4
-scispacy
-https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_ner_bc5cdr_md-0.5.4.tar.gz
-# ── Data / Evaluation ─────────────────────────────────────────────────────────
+streamlit>=1.31.0
 pandas>=2.1.4
 numpy>=1.26.4
-rouge-score>=0.1.2
-bert-score>=0.3.13
-# ── Visualization ─────────────────────────────────────────────────────────────
+requests>=2.31.0
+python-dotenv>=1.0.0
 matplotlib>=3.8.2
 seaborn>=0.13.2
-# ── App ───────────────────────────────────────────────────────────────────────
-streamlit>=1.31.0
-# ── Utilities ─────────────────────────────────────────────────────────────────
-python-dotenv>=1.0.0
-tqdm>=4.66.2
-kaggle>=1.6.3
+scikit-learn>=1.4.0
