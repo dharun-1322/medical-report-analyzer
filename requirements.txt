@@ -1,31 +1,27 @@
 # ── Core ML / DL ──────────────────────────────────────────────────────────────
 torch>=2.1.0                        # deep learning backbone
+torchvision>=0.16.0                 # required by transformers
 transformers>=4.38.0                # HuggingFace: BERT, BART, tokenizers
 datasets>=2.17.0                    # HuggingFace dataset utilities
 accelerate>=0.27.0                  # required by Trainer API
 evaluate>=0.4.1                     # metrics (accuracy, F1)
 scikit-learn>=1.4.0                 # label encoding, train/test split, metrics
 joblib>=1.3.2                       # saving label encoder
-
 # ── NLP ───────────────────────────────────────────────────────────────────────
 spacy>=3.7.4
 # scispaCy models — install AFTER pip install -r requirements.txt:
 #   pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_md-0.5.4.tar.gz
 #   pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_ner_bc5cdr_md-0.5.4.tar.gz
-
 # ── Data / Evaluation ─────────────────────────────────────────────────────────
 pandas>=2.1.4
 numpy>=1.26.4
 rouge-score>=0.1.2                  # ROUGE metrics for summarization
 bert-score>=0.3.13                  # BERTScore for summarization quality
-
 # ── Visualization ─────────────────────────────────────────────────────────────
 matplotlib>=3.8.2
 seaborn>=0.13.2
-
 # ── App ───────────────────────────────────────────────────────────────────────
 streamlit>=1.31.0
-
 # ── Utilities ─────────────────────────────────────────────────────────────────
 python-dotenv>=1.0.0
 tqdm>=4.66.2
