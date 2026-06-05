@@ -30,11 +30,6 @@ class ReportAnalyzer:
     """
 
     def __init__(self, load_summarizer: bool = True, load_ner: bool = True):
-        """
-        Args:
-            load_summarizer: Set False to skip BART (saves ~1.6GB RAM for quick tests)
-            load_ner:        Set False to skip scispaCy (saves ~500MB)
-        """
         self._clf        = None
         self._tokenizer  = None
         self._le         = None
@@ -57,16 +52,17 @@ class ReportAnalyzer:
             except Exception as e:
                 print(f"[Summarizer] Skipped — {e}")
 
- def _load_classifier(self):
-    """Load fine-tuned BioClinicalBERT + label encoder."""
-    if not CLF_SAVED_DIR.exists():
-        self._clf = None
-        self._classes = []
-        print(f"[Classifier] Skipped — model not found at {CLF_SAVED_DIR}")
-        return
+    def _load_classifier(self):
+        """Load fine-tuned BioClinicalBERT + label encoder."""
+        if not CLF_SAVED_DIR.exists():
+            self._clf = None
+            self._classes = []
+            self._device = torch.device("cpu")
+            print(f"[Classifier] Skipped — model not found at {CLF_SAVED_DIR}")
+            return
+
         from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-        # Load label config
         with open(CLF_SAVED_DIR / "label_config.json") as f:
             cfg = json.load(f)
         self._classes = cfg["classes"]
@@ -75,45 +71,37 @@ class ReportAnalyzer:
         self._clf = AutoModelForSequenceClassification.from_pretrained(
             str(CLF_SAVED_DIR)
         )
-        self._clf.eval()   # inference mode — disables dropout
+        self._clf.eval()
 
-        # Move to GPU if available
         self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self._clf.to(self._device)
 
         print(f"Classifier loaded ({self._device}) | {len(self._classes)} specialties")
 
-    # ── Individual model calls ────────────────────────────────────────────────
-
     def classify(self, text: str) -> Dict:
-    """
-    Returns top-3 specialty predictions with confidence scores.
+        """Returns top-3 specialty predictions with confidence scores."""
+        if self._clf is None:
+            return {
+                "top_specialty": "Model not available",
+                "confidence": 0.0,
+                "top_3": []
+            }
 
-    DL concept: we run a forward pass through the fine-tuned BERT,
-    get raw logits, apply softmax to get probabilities.
-    """
-    if self._clf is None:
-        return {
-            "top_specialty": "Model not available",
-            "confidence": 0.0,
-            "top_3": []
-        }
-
-    clean  = basic_clean(text)
-    inputs = self._tokenizer(
-        clean,
-        return_tensors="pt",
-        max_length=512,
-        truncation=True,
-        padding=True,
-    )
+        clean  = basic_clean(text)
+        inputs = self._tokenizer(
+            clean,
+            return_tensors="pt",
+            max_length=512,
+            truncation=True,
+            padding=True,
+        )
         inputs = {k: v.to(self._device) for k, v in inputs.items()}
 
-        with torch.no_grad():                           # no gradients at inference
-            logits = self._clf(**inputs).logits         # shape: (1, num_classes)
+        with torch.no_grad():
+            logits = self._clf(**inputs).logits
 
-        probs   = torch.softmax(logits, dim=-1).cpu().numpy()[0]  # → probabilities
-        top_idx = probs.argsort()[::-1][:3]                       # top-3 indices
+        probs   = torch.softmax(logits, dim=-1).cpu().numpy()[0]
+        top_idx = probs.argsort()[::-1][:3]
 
         return {
             "top_specialty": self._classes[top_idx[0]].replace("_", " ").title(),
@@ -142,20 +130,8 @@ class ReportAnalyzer:
             }
         return self._summarizer(text)
 
-    # ── Master method ─────────────────────────────────────────────────────────
-
     def analyze(self, raw_text: str) -> Dict[str, Any]:
-        """
-        Run all three models and return a unified result dict.
-
-        Returns:
-            {
-              "classification": { top_specialty, confidence, top_3 },
-              "entities":       { DISEASE: [...], CHEMICAL: [...] },
-              "summary":        { summary, disclaimer },
-              "disclaimer":     str
-            }
-        """
+        """Run all three models and return a unified result dict."""
         return {
             "classification": self.classify(raw_text),
             "entities":       self.extract(raw_text),
@@ -167,9 +143,8 @@ class ReportAnalyzer:
         }
 
 
-# ── Quick smoke test ──────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    analyzer = ReportAnalyzer(load_summarizer=False)   # skip BART for quick test
+    analyzer = ReportAnalyzer(load_summarizer=False)
 
     sample = (
         "Patient presents with severe chest pain radiating to the left arm. "
