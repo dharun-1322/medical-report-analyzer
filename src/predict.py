@@ -57,13 +57,13 @@ class ReportAnalyzer:
             except Exception as e:
                 print(f"[Summarizer] Skipped — {e}")
 
-    def _load_classifier(self):
-        """Load fine-tuned BioClinicalBERT + label encoder."""
-        if not CLF_SAVED_DIR.exists():
-            raise FileNotFoundError(
-                f"Classifier not found at {CLF_SAVED_DIR}.\n"
-                "Run: python src/train_classifier.py"
-            )
+ def _load_classifier(self):
+    """Load fine-tuned BioClinicalBERT + label encoder."""
+    if not CLF_SAVED_DIR.exists():
+        self._clf = None
+        self._classes = []
+        print(f"[Classifier] Skipped — model not found at {CLF_SAVED_DIR}")
+        return
         from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
         # Load label config
@@ -86,20 +86,27 @@ class ReportAnalyzer:
     # ── Individual model calls ────────────────────────────────────────────────
 
     def classify(self, text: str) -> Dict:
-        """
-        Returns top-3 specialty predictions with confidence scores.
+    """
+    Returns top-3 specialty predictions with confidence scores.
 
-        DL concept: we run a forward pass through the fine-tuned BERT,
-        get raw logits, apply softmax to get probabilities.
-        """
-        clean  = basic_clean(text)
-        inputs = self._tokenizer(
-            clean,
-            return_tensors="pt",
-            max_length=512,
-            truncation=True,
-            padding=True,
-        )
+    DL concept: we run a forward pass through the fine-tuned BERT,
+    get raw logits, apply softmax to get probabilities.
+    """
+    if self._clf is None:
+        return {
+            "top_specialty": "Model not available",
+            "confidence": 0.0,
+            "top_3": []
+        }
+
+    clean  = basic_clean(text)
+    inputs = self._tokenizer(
+        clean,
+        return_tensors="pt",
+        max_length=512,
+        truncation=True,
+        padding=True,
+    )
         inputs = {k: v.to(self._device) for k, v in inputs.items()}
 
         with torch.no_grad():                           # no gradients at inference
